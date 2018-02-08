@@ -15,6 +15,7 @@ Early stopping callbacks
 """
 from collections import Callable
 from time import time
+from pathlib import Path
 
 import numpy as np
 
@@ -252,3 +253,29 @@ class DeadlineStopper(EarlyStopper):
             return time_remaining <= np.max(self.iter_time)
         else:
             return None
+
+
+class ManualStopper(EarlyStopper):
+    """
+    Stop the optimization before running out of a fixed budget of time.
+
+    Attributes
+    ----------
+    * `iter_time`: [list, shape=(n_iter,)]:
+        `iter_time[i-1]` gives the time taken to complete iteration `i`
+
+    Parameters
+    ----------
+    * `total_time`: fixed budget of time (seconds) that the optimization must
+        finish within.
+    """
+    def __init__(self, watch_file):
+        super(ManualStopper, self).__init__()
+        self.watch_file = Path(watch_file)
+
+    def _criterion(self, result):
+        if self.watch_file.exists():
+            self.watch_file.unlink()
+            return True
+        else:
+            return False
